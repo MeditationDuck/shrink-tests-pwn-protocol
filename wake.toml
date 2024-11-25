@@ -10,12 +10,14 @@ remappings = [
     "core:openzeppelin-contracts/=core/lib/openzeppelin-contracts/",
     "core:openzeppelin/=core/lib/openzeppelin-contracts/contracts/",
     "periphery:src/=periphery/src/",
-    "periphery:MultiToken/=core/lib/MultiToken/src/"
+    "periphery:MultiToken/=core/lib/MultiToken/src/",
+    "openzeppelin/=core/lib/openzeppelin-contracts/contracts/", # for tests directory
 ]
-target_version = "0.8.16"
+
+[detectors]
+exclude = []
+ignore_paths = ["venv", ".venv", "test", "core/lib", "core/script", "core/test", "periphery/lib", "periphery/script", "periphery/test", "tests"]
+exclude_paths = ["core/lib", "core/script", "core/test", "periphery/lib", "periphery/script", "periphery/test", "tests"]
 
 [compiler.solc.optimizer]
 enabled = true
-
-[detectors]
-exclude_paths = ["core/lib", "core/script", "core/test", "periphery/lib", "periphery/script", "periphery/test"]
