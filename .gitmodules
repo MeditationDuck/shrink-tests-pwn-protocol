@@ -1,0 +1,6 @@
+[submodule "core"]
+	path = core
+	url = https://github.com/Ackee-Blockchain/pwn_contracts.git
+[submodule "periphery"]
+	path = periphery
+	url = https://github.com/PWNDAO/pwn_contracts_periphery.git
