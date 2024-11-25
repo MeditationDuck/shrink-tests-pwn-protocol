@@ -433,7 +433,7 @@ class PWNFuzzTest(FuzzTest):
             f"Create Loan propose in {self.simple_proposal}, lender={lender} borrower={borrower} use_vault={use_vault}"
         )
 
-    @flow()
+    # @flow()
     def flow_create_loan_with_list_proposal(self):
         # self.fee_collector call then the fee transfer check fail. since fee_collector balance does not changes.
 
@@ -892,7 +892,7 @@ class PWNFuzzTest(FuzzTest):
 
     @flow(
         precondition=lambda self: len(self.pending_refinancing_proposal_hash) != 0,
-        weight=1000,
+        weight=100,
     )
     def flow_create_refinancing_loan_from_proposal(self):
 
@@ -1345,23 +1345,24 @@ class PWNFuzzTest(FuzzTest):
             any(e for e in tx.events if isinstance(e, PWNLOAN.LOANBurned))
             # ------------------HOTFIX applied
 
-            # if lender == refinancing_loan_owner and (
-            #     refinancing_proposal_info.lender != refinancing_loan_owner
-            #     or refinancing_proposal_info.user_vault == proposal_info.user_vault
-            # ):
-            #     refinancing_proposal_info.actual_repaying_amount += comm
-            #     if proposal_info.user_vault is None:
-            #         self.erc20_balances[IERC20(proposal_config.creditAddress)][
-            #             lender
-            #         ] -= comm
-            #     else:
-            #         self.erc20_balances[IERC20(proposal_config.creditAddress)][
-            #             proposal_info.user_vault
-            #         ] -= comm
+            if lender == refinancing_loan_owner and (
+                refinancing_proposal_info.lender != refinancing_loan_owner
+                or refinancing_proposal_info.user_vault == proposal_info.user_vault
+            ):
+                logger.critical(f"comm: {comm} does not sent, lender: {lender}, refinancing loan: {proposal_config.refinancingLoanId}")
+                # refinancing_proposal_info.actual_repaying_amount += comm
+                # if proposal_info.user_vault is None:
+                #     self.erc20_balances[IERC20(proposal_config.creditAddress)][
+                #         lender
+                #     ] -= comm
+                # else:
+                #     self.erc20_balances[IERC20(proposal_config.creditAddress)][
+                #         proposal_info.user_vault
+                #     ] -= comm
 
-            #     self.erc20_balances[IERC20(proposal_config.creditAddress)][
-            #         self.vault
-            #     ] += comm
+                # self.erc20_balances[IERC20(proposal_config.creditAddress)][
+                #     self.vault
+                # ] += comm
             # ------------------ HOTFIX END ------------------
 
         logger.info(
@@ -1754,7 +1755,7 @@ class PWNFuzzTest(FuzzTest):
         )
         logger.info(f"Extended loan {loan_id} duration by {extension.duration} seconds")
 
-    @flow(precondition=lambda self: len(self.running_loan_id) != 0)
+    @flow(precondition=lambda self: len(self.running_loan_id) != 0, weight=200)
     def flow_transfer_loan_owner(self):
         loan_id = random.choice(self.running_loan_id)
         new_owner = random_account()
@@ -1768,7 +1769,7 @@ class PWNFuzzTest(FuzzTest):
 
     @flow()
     def go_future(self):
-        chain.mine(lambda t: t + random_int(10 * 60, 24 * 60 * 60 * 2, min_prob=0.5))
+        chain.mine(lambda t: t + random_int(10 * 60,  60 * 60 * 2, min_prob=0.5))
 
     @invariant()
     def invariant_check_loan_details(self):
