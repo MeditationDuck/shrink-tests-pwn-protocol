@@ -1,0 +1,21 @@
+[compiler.solc]
+exclude_paths = ["core/lib", "core/script", "core/test", "periphery/lib", "periphery/script", "periphery/test"]
+remappings = [
+    "pwn/=core/src/",
+    "core:MultiToken/=core/lib/MultiToken/src/",
+    "core:ds-test/=core/lib/forge-std/lib/ds-test/src/",
+    "core:erc4626-tests/=core/lib/openzeppelin-contracts/lib/erc4626-tests/",
+    "core:forge-std/=core/lib/forge-std/src/",
+    "core:multitoken/=core/lib/MultiToken/src/",
+    "core:openzeppelin-contracts/=core/lib/openzeppelin-contracts/",
+    "core:openzeppelin/=core/lib/openzeppelin-contracts/contracts/",
+    "periphery:src/=periphery/src/",
+    "periphery:MultiToken/=core/lib/MultiToken/src/"
+]
+target_version = "0.8.16"
+
+[compiler.solc.optimizer]
+enabled = true
+
+[detectors]
+exclude_paths = ["core/lib", "core/script", "core/test", "periphery/lib", "periphery/script", "periphery/test"]
