@@ -311,7 +311,11 @@ class PWNFuzzTest(FuzzTest):
         for category, token in self.local_tokens.items():
             self.multi_token_registry.registerCategoryValue(token.address, category)
 
-        self.vault_owner = random_account()
+        self.vault_owner = random_account(
+            predicate=lambda acc: acc != self.proxy_control_owner
+            and acc != self.fee_collector
+            and acc != self.owner
+        )
         self.simple_vault = SimpleVault.deploy(
             self.local_tokens[MultiToken.Category.ERC20],
             "simple vault",
@@ -1767,7 +1771,7 @@ class PWNFuzzTest(FuzzTest):
 
         logger.info(f"transfer loan owner {loan_id} from {owner} to {new_owner}")
 
-    @flow()
+    @flow(weight=10)
     def go_future(self):
         chain.mine(lambda t: t + random_int(10 * 60,  60 * 60 * 2, min_prob=0.5))
 
