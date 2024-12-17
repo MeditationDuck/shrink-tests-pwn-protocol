@@ -37,7 +37,6 @@ from pytypes.core.src.loan.terms.simple.proposal.PWNSimpleLoanElasticChainlinkPr
 from pytypes.core.src.loan.terms.simple.proposal.PWNSimpleLoanListProposal import (
     PWNSimpleLoanListProposal,
 )
-from pytypes.core.src.loan.vault.Permit import Permit as PWNPermit
 from pytypes.core.src.PWNErrors import Expired
 from pytypes.core.src.loan.lib.Chainlink import Chainlink
 from pytypes.periphery.src.pooladapter.ERC4626Adapter import ERC4626Adapter
@@ -124,22 +123,113 @@ COMP_POOLS: Dict[Account, ICometLike] = {
 }
 COMP_EXTRA_DEPOSIT = 2
 
-HAS_CHAINLINK_FEED: Dict[Account, bool] = defaultdict(lambda: False)
-HAS_CHAINLINK_FEED[TOKENS[0]["USDC"]] = True
-HAS_CHAINLINK_FEED[TOKENS[0]["USDT"]] = True
-HAS_CHAINLINK_FEED[TOKENS[0]["DAI"]] = True
-HAS_CHAINLINK_FEED[TOKENS[0]["WETH"]] = True
-HAS_CHAINLINK_FEED[TOKENS[0]["MKR"]] = True
-HAS_CHAINLINK_FEED[TOKENS[0]["UNI"]] = True
-HAS_CHAINLINK_FEED[TOKENS[0]["SHIB"]] = True
-HAS_CHAINLINK_FEED[TOKENS[0]["WBTC"]] = True
-HAS_CHAINLINK_FEED[TOKENS[0]["FTM"]] = True
+class ChainlinkFeedInfo(NamedTuple):
+    denominations: List[Address]
+    invert_flags: List[bool]
 
-PermitInfo = NamedTuple("PermitInfo", [("name", str), ("version", Optional[str])])
+USD_DENOM = Address(840)
+ETH_DENOM = Address("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE")
+BTC_DENOM = Address("0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB")
 
-PERMIT: Dict[Account, PermitInfo] = {}
-PERMIT[TOKENS[0]["USDC"]] = PermitInfo(name="USD Coin", version="2")
-PERMIT[TOKENS[0]["UNI"]] = PermitInfo(name="Uniswap", version=None)
+VIA_USD = ChainlinkFeedInfo([USD_DENOM], [False, True])
+VIA_ETH = ChainlinkFeedInfo([ETH_DENOM], [False, True])
+VIA_BTC = ChainlinkFeedInfo([BTC_DENOM], [False, True])
+
+
+CHAINLINK_FEED_INFO: Dict[Account, Dict[Account, ChainlinkFeedInfo]] = {}
+CHAINLINK_FEED_INFO[TOKENS[0]["USDC"]] = {  # ETH or USD
+    TOKENS[0]["USDT"]: VIA_USD,
+    TOKENS[0]["DAI"]: VIA_USD,
+    TOKENS[0]["WETH"]: ChainlinkFeedInfo([], [False]),
+    TOKENS[0]["MKR"]: VIA_USD,
+    TOKENS[0]["UNI"]: VIA_USD,
+    TOKENS[0]["SHIB"]: VIA_ETH,
+    TOKENS[0]["WBTC"]: ChainlinkFeedInfo([USD_DENOM, BTC_DENOM], [False, True, True]),
+    TOKENS[0]["FTM"]: VIA_ETH,
+}
+CHAINLINK_FEED_INFO[TOKENS[0]["USDT"]] = {  # ETH or USD
+    TOKENS[0]["USDC"]: VIA_USD,
+    TOKENS[0]["DAI"]: VIA_USD,
+    TOKENS[0]["WETH"]: ChainlinkFeedInfo([], [False]),
+    TOKENS[0]["MKR"]: VIA_USD,
+    TOKENS[0]["UNI"]: VIA_USD,
+    TOKENS[0]["SHIB"]: VIA_ETH,
+    TOKENS[0]["WBTC"]: ChainlinkFeedInfo([USD_DENOM, BTC_DENOM], [False, True, True]),
+    TOKENS[0]["FTM"]: VIA_ETH,
+}
+CHAINLINK_FEED_INFO[TOKENS[0]["DAI"]] = {  # ETH or USD
+    TOKENS[0]["USDC"]: VIA_USD,
+    TOKENS[0]["USDT"]: VIA_USD,
+    TOKENS[0]["WETH"]: ChainlinkFeedInfo([], [False]),
+    TOKENS[0]["MKR"]: VIA_USD,
+    TOKENS[0]["UNI"]: VIA_USD,
+    TOKENS[0]["SHIB"]: VIA_ETH,
+    TOKENS[0]["WBTC"]: ChainlinkFeedInfo([USD_DENOM, BTC_DENOM], [False, True, True]),
+    TOKENS[0]["FTM"]: VIA_ETH,
+}
+CHAINLINK_FEED_INFO[TOKENS[0]["WETH"]] = {
+    TOKENS[0]["USDC"]: ChainlinkFeedInfo([], [True]),
+    TOKENS[0]["USDT"]: ChainlinkFeedInfo([], [True]),
+    TOKENS[0]["DAI"]: ChainlinkFeedInfo([], [True]),
+    TOKENS[0]["MKR"]: ChainlinkFeedInfo([], [True]),
+    TOKENS[0]["UNI"]: ChainlinkFeedInfo([], [True]),
+    TOKENS[0]["SHIB"]: ChainlinkFeedInfo([], [True]),
+    TOKENS[0]["WBTC"]: ChainlinkFeedInfo([BTC_DENOM], [True, True]),
+    TOKENS[0]["FTM"]: ChainlinkFeedInfo([], [True]),
+}
+CHAINLINK_FEED_INFO[TOKENS[0]["MKR"]] = {  # ETH or USD
+    TOKENS[0]["USDC"]: VIA_USD,
+    TOKENS[0]["USDT"]: VIA_USD,
+    TOKENS[0]["DAI"]: VIA_USD,
+    TOKENS[0]["WETH"]: ChainlinkFeedInfo([], [False]),
+    TOKENS[0]["UNI"]: VIA_USD,
+    TOKENS[0]["SHIB"]: VIA_ETH,
+    TOKENS[0]["WBTC"]: ChainlinkFeedInfo([USD_DENOM, BTC_DENOM], [False, True, True]),
+    TOKENS[0]["FTM"]: VIA_ETH,
+}
+CHAINLINK_FEED_INFO[TOKENS[0]["UNI"]] = {  # ETH or USD
+    TOKENS[0]["USDC"]: VIA_USD,
+    TOKENS[0]["USDT"]: VIA_USD,
+    TOKENS[0]["DAI"]: VIA_USD,
+    TOKENS[0]["WETH"]: ChainlinkFeedInfo([], [False]),
+    TOKENS[0]["MKR"]: VIA_USD,
+    TOKENS[0]["SHIB"]: VIA_ETH,
+    TOKENS[0]["WBTC"]: ChainlinkFeedInfo([USD_DENOM, BTC_DENOM], [False, True, True]),
+    TOKENS[0]["FTM"]: VIA_ETH,
+}
+CHAINLINK_FEED_INFO[TOKENS[0]["SHIB"]] = {  # ETH
+    TOKENS[0]["USDC"]: VIA_ETH,
+    TOKENS[0]["USDT"]: VIA_ETH,
+    TOKENS[0]["DAI"]: VIA_ETH,
+    TOKENS[0]["WETH"]: ChainlinkFeedInfo([], [False]),
+    TOKENS[0]["MKR"]: VIA_ETH,
+    TOKENS[0]["UNI"]: VIA_ETH,
+    TOKENS[0]["SHIB"]: VIA_ETH,
+    TOKENS[0]["WBTC"]: ChainlinkFeedInfo([ETH_DENOM, BTC_DENOM], [False, True, True]),
+    TOKENS[0]["FTM"]: VIA_ETH,
+}
+CHAINLINK_FEED_INFO[TOKENS[0]["WBTC"]] = {  # BTC
+    TOKENS[0]["USDC"]: ChainlinkFeedInfo([BTC_DENOM, USD_DENOM], [False, False, True]),
+    TOKENS[0]["USDT"]: ChainlinkFeedInfo([BTC_DENOM, USD_DENOM], [False, False, True]),
+    TOKENS[0]["DAI"]: ChainlinkFeedInfo([BTC_DENOM, USD_DENOM], [False, False, True]),
+    TOKENS[0]["WETH"]: ChainlinkFeedInfo([BTC_DENOM], [False, False]),
+    TOKENS[0]["MKR"]: ChainlinkFeedInfo([BTC_DENOM, USD_DENOM], [False, False, True]),
+    TOKENS[0]["UNI"]: ChainlinkFeedInfo([BTC_DENOM, USD_DENOM], [False, False, True]),
+    TOKENS[0]["SHIB"]: ChainlinkFeedInfo([BTC_DENOM, ETH_DENOM], [False, False, True]),
+    TOKENS[0]["WBTC"]: ChainlinkFeedInfo([USD_DENOM, BTC_DENOM], [False, True, True]),
+    TOKENS[0]["FTM"]: ChainlinkFeedInfo([BTC_DENOM, ETH_DENOM], [False, False, True]),
+}
+CHAINLINK_FEED_INFO[TOKENS[0]["FTM"]] = {  # ETH
+    TOKENS[0]["USDC"]: VIA_ETH,
+    TOKENS[0]["USDT"]: VIA_ETH,
+    TOKENS[0]["DAI"]: VIA_ETH,
+    TOKENS[0]["WETH"]: ChainlinkFeedInfo([], [False]),
+    TOKENS[0]["MKR"]: VIA_ETH,
+    TOKENS[0]["UNI"]: VIA_ETH,
+    TOKENS[0]["SHIB"]: VIA_ETH,
+    TOKENS[0]["WBTC"]: ChainlinkFeedInfo([ETH_DENOM, BTC_DENOM], [False, True, True]),
+    TOKENS[0]["FTM"]: VIA_ETH,
+}
 
 FEED_REGISTRY = FeedRegistryInterface("0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf")
 
@@ -157,15 +247,6 @@ class AggregatorData(NamedTuple):
     round_id: int
     price: int
     timestamp: int
-
-
-@dataclass
-class Permit:
-    owner: Address
-    spender: Address
-    value: uint256
-    nonce: uint256
-    deadline: uint256
 
 
 def random_duration_or_date():
@@ -1222,7 +1303,7 @@ class PWNFuzzTest(FuzzTest):
             [
                 t
                 for t in TOKENS[collateral_category.value].values()
-                if HAS_CHAINLINK_FEED[t]
+                if t in CHAINLINK_FEED_INFO
             ]
         )
         collateral_id = (
@@ -1232,7 +1313,7 @@ class PWNFuzzTest(FuzzTest):
         )
 
         credit_token = random.choice(
-            [t for t in TOKENS[0].values() if HAS_CHAINLINK_FEED[t]]
+            [t for t in TOKENS[0].values() if t in CHAINLINK_FEED_INFO and t != collateral_token]
         )
         credit_decimals = DECIMALS[credit_token]
         loan_to_value = random_int(1, 100_000)
@@ -1280,6 +1361,8 @@ class PWNFuzzTest(FuzzTest):
                 nonceSpace=nonce_space,
                 nonce=nonce,
                 loanContract=self.vault.address,
+                feedIntermediaryDenominations=CHAINLINK_FEED_INFO[credit_token][collateral_token].denominations,
+                feedInvertFlags=CHAINLINK_FEED_INFO[credit_token][collateral_token].invert_flags,
             ),
             lender_spec,
         )
@@ -1497,50 +1580,41 @@ class PWNFuzzTest(FuzzTest):
 
         logger.info(f"Proposal made: {proposal}")
 
-    def _get_chainlink_latest_round_data(self, asset: Address):
-        if asset == TOKENS[0]["WETH"].address:
-            asset = Address("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE")
+    def _get_chainlink_price(self, credit: Account, collateral: Account) -> Tuple[int, int]:
+        info = CHAINLINK_FEED_INFO[credit][collateral]
 
-        with may_revert("Feed not found"):
-            feed = FEED_REGISTRY.getFeed(asset, Address(840))  # USD
-            return feed.latestRoundData()[1], feed.decimals(), Address(840)
+        if credit == TOKENS[0]["WETH"]:
+            credit = Account(ETH_DENOM)
 
-        with may_revert("Feed not found"):
-            feed = FEED_REGISTRY.getFeed(
-                asset, Address("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE")
-            )  # ETH
-            return (
-                feed.latestAnswer(),
-                feed.decimals(),
-                Address("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"),
-            )
+        if collateral == TOKENS[0]["WETH"]:
+            collateral = Account(ETH_DENOM)
 
-        feed = FEED_REGISTRY.getFeed(
-            asset, Address("0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB")
-        )  # BTC
-        return (
-            feed.latestAnswer(),
-            feed.decimals(),
-            Address("0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB"),
-        )
+        bases = [credit.address] + info.denominations
+        quotes = info.denominations + [collateral.address]
 
-    def _convert_price_denominator(
-        self,
-        price: int,
-        price_decimals: int,
-        original_denominator: Address,
-        new_denominator: Address,
-    ):
-        feed = FEED_REGISTRY.getFeed(new_denominator, original_denominator)
-        new_price = feed.latestAnswer()
-        new_price_decimals = feed.decimals()
+        price = 1
+        decimals = 0
 
-        if new_price_decimals < price_decimals:
-            new_price *= 10 ** (price_decimals - new_price_decimals)
-        else:
-            price *= 10 ** (new_price_decimals - price_decimals)
+        for base, quote, invert in zip(bases, quotes, info.invert_flags):
+            if invert:
+                base, quote = quote, base
 
-        return (price * 10 ** price_decimals) // new_price, max(price_decimals, new_price_decimals)
+            _, new_price, _, _, _ = FEED_REGISTRY.latestRoundData(base, quote)
+            new_decimals = FEED_REGISTRY.decimals(base, quote)
+
+            if new_decimals < decimals:
+                new_price *= 10 ** (decimals - new_decimals)
+            else:
+                price *= 10 ** (new_decimals - decimals)
+
+            decimals = max(decimals, new_decimals)
+
+            if invert:
+                price = price * 10 ** decimals // new_price
+            else:
+                price = price * new_price // 10 ** decimals
+
+        return price, decimals
 
     @flow()
     def flow_accept_elastic_chainlink_proposal(self):
@@ -1597,47 +1671,16 @@ class PWNFuzzTest(FuzzTest):
             credit_amount
         )
 
-        collateral_price, collateral_price_decimals, collateral_denominator = (
-            self._get_chainlink_latest_round_data(proposal.collateralAddress)
-        )
-        credit_price, credit_price_decimals, credit_denominator = (
-            self._get_chainlink_latest_round_data(proposal.creditAddress)
-        )
+        price, decimals = self._get_chainlink_price(IERC20(proposal.creditAddress), IERC20(proposal.collateralAddress))
 
-        if collateral_denominator != credit_denominator:
-            if credit_denominator == Address(840):
-                credit_price, credit_price_decimals = self._convert_price_denominator(
-                    credit_price, credit_price_decimals, credit_denominator, collateral_denominator
-                )
-            elif collateral_denominator == Address(840):
-                collateral_price, collateral_price_decimals = self._convert_price_denominator(
-                    collateral_price, collateral_price_decimals, collateral_denominator, credit_denominator
-                )
-            elif credit_denominator == Address("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"):
-                credit_price, credit_price_decimals = self._convert_price_denominator(
-                    credit_price, credit_price_decimals, credit_denominator, collateral_denominator
-                )
-            else:
-                collateral_price, collateral_price_decimals = self._convert_price_denominator(
-                    collateral_price, collateral_price_decimals, collateral_denominator, credit_denominator
-                )
-
-        # same denominator
-        if collateral_price_decimals > credit_price_decimals:
-            credit_price *= 10 ** (collateral_price_decimals - credit_price_decimals)
-        else:
-            collateral_price *= 10 ** (
-                credit_price_decimals - collateral_price_decimals
-            )
+        if collateral_decimals > credit_decimals:
+            price *= 10 ** (collateral_decimals - credit_decimals)
 
         collateral_amount = (
-            credit_amount
-            * credit_price
-            * 10_000
-            * 10 ** max(0, collateral_decimals - credit_decimals)
-            // (collateral_price * proposal.loanToValue)
-        )
-        if collateral_decimals < credit_decimals:
+            credit_amount * price // 10 ** decimals
+        ) * 10_000 // proposal.loanToValue
+
+        if credit_decimals > collateral_decimals:
             collateral_amount //= 10 ** (credit_decimals - collateral_decimals)
 
         def revert_handler(tx: TransactionAbc) -> bool:
@@ -1648,7 +1691,7 @@ class PWNFuzzTest(FuzzTest):
                 )
                 return True
             elif isinstance(tx.error, Chainlink.ChainlinkFeedPriceTooOld):
-                aggregator = FEED_REGISTRY.getFeed(tx.error.asset, tx.error.denominator)
+                aggregator = Account(tx.error.feed)
                 latest_data = self._get_aggregator_data(aggregator)
                 assert (
                     latest_data.timestamp + MAX_CHAINLINK_FEED_PRICE_AGE
@@ -1731,35 +1774,6 @@ class PWNFuzzTest(FuzzTest):
 
         pool.allow(self.compound_adapter, True, from_=lender)
         # tokens inside Compound are not tracked
-
-    def _permit(self, token: IERC20, owner: Account, amount: int) -> bytes:
-        nonce = abi.decode(
-            token.call(abi.encode_with_signature("nonces(address)", owner)),
-            [uint],
-        )
-        permit = Permit(
-            owner.address, self.vault.address, amount, nonce, uint256.max
-        )
-        domain = Eip712Domain(
-            name=PERMIT[token].name,
-            chainId=chain.chain_id,
-            verifyingContract=token,
-        )
-        if PERMIT[token].version is not None:
-            domain["version"] = PERMIT[token].version
-
-        permit_signature = owner.sign_structured(permit, domain)
-        return abi.encode(
-            PWNPermit(
-                token.address,
-                owner.address,
-                amount,
-                uint256.max,
-                permit_signature[64],
-                permit_signature[:32],
-                permit_signature[32:64],
-            )
-        )
 
     def _accept_proposal(
         self,
@@ -1858,7 +1872,7 @@ class PWNFuzzTest(FuzzTest):
                 prev_loan_owner != lender or (
                     prev_loan_owner == self.loans[proposal.refinancingLoanId].lender and
                     self.loans[proposal.refinancingLoanId].source_of_funds.address != lender_spec.sourceOfFunds
-                )
+                ) or prev_loan_owner != self.loans[proposal.refinancingLoanId].lender
             )
 
             if settle_lenders:
@@ -1900,29 +1914,21 @@ class PWNFuzzTest(FuzzTest):
             mint_erc20(credit, borrower, borrower_credit_amount)
             self.erc20_balances[credit][borrower] += borrower_credit_amount
 
-        permit_data = b""
-        if credit in PERMIT and acceptor == lender and lender_credit_amount > 0 and random_bool():
-            permit_data = self._permit(credit, lender, lender_credit_amount)
-        else:
-            # approve
-            if lender_credit_amount > 0:
-                with may_revert():
-                    credit.approve(self.vault, 0, from_=lender)
-                credit.approve(self.vault, lender_credit_amount, from_=lender)
+        # approve
+        if lender_credit_amount > 0:
+            with may_revert():
+                credit.approve(self.vault, 0, from_=lender)
+            credit.approve(self.vault, lender_credit_amount, from_=lender)
 
-        if credit in PERMIT and acceptor == borrower and borrower_credit_amount > 0 and random_bool():
-            permit_data = self._permit(credit, borrower, borrower_credit_amount)
-        else:
-            if borrower_credit_amount > 0:
-                with may_revert():
-                    credit.approve(self.vault, 0, from_=borrower)
-                credit.approve(self.vault, borrower_credit_amount, from_=borrower)
+        if borrower_credit_amount > 0:
+            with may_revert():
+                credit.approve(self.vault, 0, from_=borrower)
+            credit.approve(self.vault, borrower_credit_amount, from_=borrower)
 
         caller_spec = PWNSimpleLoan.CallerSpec(
             refinancingLoanId=proposal.refinancingLoanId,
             revokeNonce=random_bool(),
             nonce=random_nonce(),
-            permitData=permit_data,
         )
 
         if proposal.collateralAddress == TOKENS[1]["MOCK"].address and random_bool():
@@ -2264,48 +2270,17 @@ class PWNFuzzTest(FuzzTest):
         mint_erc20(loan.credit, sender, credit_amount)
         self.erc20_balances[loan.credit][sender] += credit_amount
 
-        if loan.credit in PERMIT and random_bool():
-            nonce = abi.decode(
-                loan.credit.call(abi.encode_with_signature("nonces(address)", sender)),
-                [uint],
-            )
-            permit = Permit(
-                sender.address, self.vault.address, credit_amount, nonce, uint256.max
-            )
-            domain = Eip712Domain(
-                name=PERMIT[loan.credit].name,
-                chainId=chain.chain_id,
-                verifyingContract=loan.credit,
-            )
-            if PERMIT[loan.credit].version is not None:
-                domain["version"] = PERMIT[loan.credit].version
-
-            permit_signature = sender.sign_structured(permit, domain)
-            permit_data = abi.encode(
-                PWNPermit(
-                    loan.credit.address,
-                    sender.address,
-                    credit_amount,
-                    uint256.max,
-                    permit_signature[64],
-                    permit_signature[:32],
-                    permit_signature[32:64],
-                )
-            )
-        else:
-            # approve
-            if credit_amount > 0:
-                with may_revert():
-                    loan.credit.approve(self.vault, 0, from_=sender)
-                loan.credit.approve(self.vault, credit_amount, from_=sender)
-
-            permit_data = b""
+        # approve
+        if credit_amount > 0:
+            with may_revert():
+                loan.credit.approve(self.vault, 0, from_=sender)
+            loan.credit.approve(self.vault, credit_amount, from_=sender)
 
         loan_owner = Account(self.loan_token.ownerOf(loan.id))
 
         chain.set_next_block_timestamp(t)
         with may_revert(PWNSimpleLoan.LoanDefaulted) as ex:
-            tx = self.vault.repayLOAN(loan.id, permit_data, from_=sender)
+            tx = self.vault.repayLOAN(loan.id, from_=sender)
 
         if chain.blocks["latest"].timestamp >= loan.start_timestamp + loan.duration:
             assert ex.value == PWNSimpleLoan.LoanDefaulted(
@@ -2517,7 +2492,7 @@ class PWNFuzzTest(FuzzTest):
                 proposal,
                 Eip712Domain(
                     name="PWNSimpleLoan",
-                    version="1.2",
+                    version="1.2.2",
                     chainId=chain.chain_id,
                     verifyingContract=self.vault,
                 ),
@@ -2541,58 +2516,14 @@ class PWNFuzzTest(FuzzTest):
                 loan.borrower
             ] += proposal.compensationAmount
 
-            if (
-                acceptor == loan.borrower
-                and compensation_token in PERMIT
-                and random_bool()
-            ):
-                # only accepting borrower can use permit
-                nonce = abi.decode(
-                    compensation_token.call(
-                        abi.encode_with_signature("nonces(address)", loan.borrower)
-                    ),
-                    [uint],
-                )
-                permit = Permit(
-                    loan.borrower.address,
-                    self.vault.address,
-                    proposal.compensationAmount,
-                    nonce,
-                    uint256.max,
-                )
-                domain = Eip712Domain(
-                    name=PERMIT[compensation_token].name,
-                    chainId=chain.chain_id,
-                    verifyingContract=compensation_token,
-                )
-                if PERMIT[compensation_token].version is not None:
-                    domain["version"] = PERMIT[compensation_token].version
-
-                permit_signature = loan.borrower.sign_structured(permit, domain)
-                permit_data = abi.encode(
-                    PWNPermit(
-                        compensation_token.address,
-                        loan.borrower.address,
-                        proposal.compensationAmount,
-                        uint256.max,
-                        permit_signature[64],
-                        permit_signature[:32],
-                        permit_signature[32:64],
-                    )
-                )
-            else:
-                with may_revert():
-                    compensation_token.approve(self.vault, 0, from_=loan.borrower)
-                compensation_token.approve(
-                    self.vault, proposal.compensationAmount, from_=loan.borrower
-                )
-
-                permit_data = b""
-        else:
-            permit_data = b""
+            with may_revert():
+                compensation_token.approve(self.vault, 0, from_=loan.borrower)
+            compensation_token.approve(
+                self.vault, proposal.compensationAmount, from_=loan.borrower
+            )
 
         with may_revert() as ex:
-            tx = self.vault.extendLOAN(proposal, signature, permit_data, from_=acceptor)
+            tx = self.vault.extendLOAN(proposal, signature, from_=acceptor)
 
         if chain.blocks["latest"].timestamp >= proposal.expiration:
             assert ex.value == Expired(

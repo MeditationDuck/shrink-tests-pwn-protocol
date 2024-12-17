@@ -12,6 +12,7 @@ remappings = [
     "periphery:src/=periphery/src/",
     "periphery:MultiToken/=core/lib/MultiToken/src/",
     "openzeppelin/=core/lib/openzeppelin-contracts/contracts/", # for tests directory
+    "openzeppelin-upgradeable/=core/lib/openzeppelin-contracts-upgradeable/contracts/",
 ]
 
 [detectors]
