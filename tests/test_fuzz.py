@@ -2543,7 +2543,7 @@ class PWNFuzzTest(FuzzTest):
                 proposer.address,
             )
         elif loan_owner == loan.borrower and proposal.compensationAmount > 0:
-            assert ex.value == PWNSimpleLoan.IncompleteTransfer()
+            assert ex.value == PWNSimpleLoan.VaultTransferSameSourceAndDestination(loan_owner.address)
         else:
             assert ex.value is None
 
