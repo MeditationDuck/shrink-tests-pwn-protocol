@@ -485,7 +485,8 @@ class PWNFuzzTest(FuzzTest):
         assert price == new_price
         assert updated_at == timestamp
 
-    def post_invariants(self) -> None:
+    @flow()
+    def flow_chain_mine(self):
         chain.mine(lambda t: t + 50)
 
     @flow()
@@ -702,7 +703,7 @@ class PWNFuzzTest(FuzzTest):
             proposal.expiration,
             signature,
             inclusion_proof,
-            chain.blocks["latest"].timestamp + 10,
+            chain.blocks["latest"].timestamp + 20,
             lender_spec,
         )
 
@@ -909,7 +910,7 @@ class PWNFuzzTest(FuzzTest):
 
         credit_decimals = DECIMALS[IERC20(proposal.creditAddress)]
 
-        target_time = chain.blocks["latest"].timestamp + 10
+        target_time = chain.blocks["latest"].timestamp + 20
         credit_change = max(
             0,
             (proposal.maxCreditAmount - proposal.minCreditAmount)
@@ -1195,7 +1196,7 @@ class PWNFuzzTest(FuzzTest):
             proposal.expiration,
             signature,
             inclusion_proof,
-            chain.blocks["latest"].timestamp + 10,
+            chain.blocks["latest"].timestamp + 20,
             lender_spec,
             revert_handler,
         )
@@ -1673,7 +1674,7 @@ class PWNFuzzTest(FuzzTest):
             proposal.expiration,
             signature,
             inclusion_proof,
-            chain.blocks["latest"].timestamp + 10,
+            chain.blocks["latest"].timestamp + 20,
             lender_spec,
             revert_handler,
         )
@@ -2237,7 +2238,7 @@ class PWNFuzzTest(FuzzTest):
             proposal.expiration,
             signature,
             inclusion_proof,
-            chain.blocks["latest"].timestamp + 10,
+            chain.blocks["latest"].timestamp + 20,
             lender_spec,
         )
 
