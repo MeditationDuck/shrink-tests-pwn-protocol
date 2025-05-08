@@ -21,3 +21,6 @@ exclude_paths = ["core/lib", "core/script", "core/test", "periphery/lib", "perip
 
 [compiler.solc.optimizer]
 enabled = true
+
+[testing]
+cmd = "anvil"

@@ -544,7 +544,7 @@ class PWNFuzzTest(FuzzTest):
                     for id in self.erc721_owners[IERC721(self.loan_token)].keys()
                     if self.erc721_owners[IERC721(self.loan_token)][id] != self.vault
                 ]
-                if len(pwn_tokens) > 0 and random_bool(true_prob=0.77):
+                if len(pwn_tokens) > 0 and random_bool(true_prob=0.1):
                     collateral_token = self.loan_token
                     collateral_id = random.choice(pwn_tokens)
                     state_fingerprint = self.loan_token.getStateFingerprint(collateral_id)
@@ -1064,7 +1064,7 @@ class PWNFuzzTest(FuzzTest):
         min_credit_amount = random_int(0, MAX_TOKENS[credit_token]) * 10 ** credit_decimals
         proposer = random_account()
         utilized_credit_id = random.choice(self.utilized_ids)
-        available_credit_limit = self._random_credit_limit(proposer, utilized_credit_id, min_credit_amount * 2)
+        available_credit_limit = self._random_credit_limit(proposer, utilized_credit_id, min_credit_amount)
 
         fixed_interest_amount = random_int(0, MAX_TOKENS[credit_token]) * 10 ** credit_decimals
         interest_apr = random_int(0, MAX_APR)
@@ -1818,6 +1818,7 @@ class PWNFuzzTest(FuzzTest):
                         if collateral.ownerOf(collateral_id) != borrower.address:
                             return None
                     except Error:
+                        assert False
                         return None
                 else:
                     ERC721Mock(proposal.collateralAddress).mint(borrower, collateral_id)
@@ -2628,6 +2629,8 @@ class PWNFuzzTest(FuzzTest):
                     loan_owner
                 ] += proposal.compensationAmount
 
+                # assert False
+
         if onchain_proposal:
             loan.extension_proposals.remove(proposal)
 
@@ -2682,7 +2685,7 @@ class PWNFuzzTest(FuzzTest):
                     assert contract.balanceOf(acc, token_id) == self.erc1155_balances[contract][acc][token_id]
 
 
-@chain.connect(fork="http://localhost:8545")
+@chain.connect(fork="http://localhost:8545@21073557")
 @on_revert(lambda e: print(e.tx.call_trace if e.tx is not None else None))
 def test_fuzz():
     PWNFuzzTest().run(100, 2_000)
